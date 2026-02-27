@@ -1,0 +1,29 @@
+{
+  "name": "scatch",
+  "version": "1.0.0",
+  "description": "��#\u0000 \u0000s\u0000c\u0000a\u0000t\u0000c\u0000h\u0000\r\u0000 \u0000",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KANHAIYA-VASHU/scatch.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KANHAIYA-VASHU/scatch/issues"
+  },
+  "homepage": "https://github.com/KANHAIYA-VASHU/scatch#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "crypto": "^1.0.1",
+    "ejs": "^4.0.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.2.3"
+  }
+}
