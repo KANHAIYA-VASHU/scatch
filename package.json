@@ -19,8 +19,10 @@
   "homepage": "https://github.com/KANHAIYA-VASHU/scatch#readme",
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "config": "^4.4.1",
     "cookie-parser": "^1.4.7",
     "crypto": "^1.0.1",
+    "debug": "^4.4.3",
     "ejs": "^4.0.1",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
