@@ -25,7 +25,8 @@ if(process.env.NODE_ENV === "development"){
 }
 
 router.get("/admin", function(req, res){
-    res.render("createproducts");
+    let success = req.flash("success");
+    res.render("createproducts", { success });
 });
 
 module.exports = router;
