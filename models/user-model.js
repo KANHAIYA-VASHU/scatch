@@ -4,9 +4,11 @@ const userSchema = mongoose.Schema({
     fullname : String,
     email : String,
     password: String,
-    cart : [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "product",
+    cart: [{
+        
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "product"
+        ,
     }],
     orders: {
         type: Array,
