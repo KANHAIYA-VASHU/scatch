@@ -1,0 +1,50 @@
+<%- include('./partials/header') %>
+
+<% if (success.length > 0) { %>
+    <div class="absolute top-5 left-1/2 -translate-x-1/2 p-3 rounded-md bg-blue-500 text-white">
+        <%= success %>
+    </div>
+<% } %>
+
+<% if (error.length > 0) { %>
+    <div class="absolute top-20 left-1/2 -translate-x-1/2 p-3 rounded-md bg-red-500 text-white">
+        <%= error %>
+    </div>
+<% } %>
+
+<div class="min-h-screen px-10 py-10 bg-zinc-50">
+    <div class="max-w-3xl mx-auto bg-white p-6 rounded-md shadow">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold">Edit Product</h2>
+            <a href="/owners/admin" class="text-blue-600">Back to Admin</a>
+        </div>
+
+        <form action="/products/update/<%= product._id %>" method="post" enctype="multipart/form-data">
+            <div class="mb-4">
+                <label class="block mb-2 font-medium">Current Image</label>
+                <div class="h-44 rounded flex items-center justify-center bg-[#<%= product.bgcolor %>]">
+                    <img class="h-32" src="data:image/jpeg;base64,<%= product.image.toString('base64') %>" alt="">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block mb-2 font-medium">Replace Image (optional)</label>
+                <input name="image" type="file" class="py-2 px-2 border rounded w-full" accept="image/*">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <input name="name" type="text" value="<%= product.name %>" placeholder="Product Name *" class="border p-2 rounded w-full" required>
+                <input name="price" type="number" min="0" step="0.01" value="<%= product.price %>" placeholder="Product Price *" class="border p-2 rounded w-full" required>
+                <input name="discount" type="number" min="0" step="0.01" value="<%= product.discount || 0 %>" placeholder="Discount (optional)" class="border p-2 rounded w-full">
+                <input name="bgcolor" type="text" value="<%= product.bgcolor %>" placeholder="Background Color *" class="border p-2 rounded w-full" required>
+                <input name="panelcolor" type="text" value="<%= product.panelcolor %>" placeholder="Panel Color *" class="border p-2 rounded w-full" required>
+                <input name="textcolor" type="text" value="<%= product.textcolor || '000000' %>" placeholder="Text Color (optional)" class="border p-2 rounded w-full">
+            </div>
+
+            <p class="text-xs text-zinc-500 mt-3">Fields marked * are required.</p>
+            <button class="px-5 py-2 rounded mt-4 bg-blue-500 text-white" type="submit">Update Product</button>
+        </form>
+    </div>
+</div>
+
+<%- include('./partials/footer') %>

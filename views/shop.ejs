@@ -13,9 +13,9 @@
             <div class="flex items-center gap-2">
                 <h3>sort by</h3>
                 <form action="/shop">
-                    <select class="border-[1px] px-2 py-1" name="sortby" id="">
-                        <option value="popular">Popular</option>
-                        <option value="newest">Newest</option>
+                    <select class="border-[1px] px-2 py-1" name="sortby" id="sortby" onchange="this.form.submit()">
+                        <option value="popular" <%= sortBy === "popular" ? "selected" : "" %>>Popular</option>
+                        <option value="newest" <%= sortBy === "newest" ? "selected" : "" %>>Newest</option>
                     </select>
                 </form>
             </div>
