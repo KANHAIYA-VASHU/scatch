@@ -1,0 +1,40 @@
+<%- include('./partials/header') %>
+
+<% if (error && error.length > 0) { %>
+    <div class="absolute top-5 left-1/2 -translate-x-1/2 p-3 rounded-md bg-red-500 text-white">
+        <%= error %>
+    </div>
+<% } %>
+
+<% if (success && success.length > 0) { %>
+    <div class="absolute top-20 left-1/2 -translate-x-1/2 p-3 rounded-md bg-blue-500 text-white">
+        <%= success %>
+    </div>
+<% } %>
+
+<div class="w-full h-screen flex px-20">
+    <div class="w-full max-w-xl mx-auto flex items-center justify-center h-screen">
+        <div class="w-full">
+            <h4 class="text-3xl capitalize mb-2">Owner Registration</h4>
+            <p class="text-zinc-600 mb-5">This is available only when no owner exists.</p>
+            <form action="/owners/register" method="post">
+                <input
+                    class="block bg-zinc-100 w-full px-3 py-2 border rounded-md mb-3 border-zinc-200"
+                    type="text" placeholder="Full Name" name="fullname" required
+                >
+                <input
+                    class="block bg-zinc-100 w-full px-3 py-2 border rounded-md mb-3 border-zinc-200"
+                    type="email" placeholder="Owner Email" name="email" required
+                >
+                <input
+                    class="block bg-zinc-100 w-full px-3 py-2 border rounded-md mb-3 border-zinc-200"
+                    type="password" placeholder="Password" name="password" required
+                >
+                <button class="px-5 rounded-full py-3 mt-2 bg-blue-500 text-white" type="submit">Register Owner</button>
+            </form>
+            <a class="inline-block mt-6 text-sm underline text-zinc-700" href="/owners/login">Already have owner account? Login</a>
+        </div>
+    </div>
+</div>
+
+<%- include('./partials/footer') %>

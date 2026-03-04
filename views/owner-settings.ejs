@@ -1,0 +1,60 @@
+<%- include('./partials/header') %>
+
+<% if (success && success.length > 0) { %>
+    <div class="absolute top-5 left-1/2 -translate-x-1/2 p-3 rounded-md bg-blue-500 text-white">
+        <%= success %>
+    </div>
+<% } %>
+
+<% if (error && error.length > 0) { %>
+    <div class="absolute top-20 left-1/2 -translate-x-1/2 p-3 rounded-md bg-red-500 text-white">
+        <%= error %>
+    </div>
+<% } %>
+
+<div class="min-h-screen px-10 py-10 bg-zinc-50">
+    <div class="max-w-3xl mx-auto mb-4 flex gap-4">
+        <a href="/owners/admin" class="px-3 py-2 rounded bg-zinc-800 text-white text-sm">Owner Dashboard</a>
+        <a href="/owners/logout" class="px-3 py-2 rounded bg-white border text-sm">Owner Logout</a>
+    </div>
+
+    <div class="max-w-3xl mx-auto bg-white p-6 rounded-md shadow">
+        <h2 class="text-2xl font-bold mb-5">Owner Settings</h2>
+
+        <form action="/owners/settings/update" method="post" class="space-y-3 mb-8">
+            <input name="fullname" type="text" value="<%= owner.fullname || '' %>" placeholder="Full Name" class="w-full border rounded px-3 py-2" required>
+            <input name="email" type="email" value="<%= owner.email || '' %>" placeholder="Email" class="w-full border rounded px-3 py-2" required>
+            <input name="picture" type="text" value="<%= owner.picture || '' %>" placeholder="Profile Image URL (optional)" class="w-full border rounded px-3 py-2">
+            <input name="gstin" type="text" value="<%= owner.gstin || '' %>" placeholder="GSTIN (optional)" class="w-full border rounded px-3 py-2">
+            <input name="newPassword" type="password" placeholder="New Password (optional)" class="w-full border rounded px-3 py-2">
+            <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white">Update Owner Profile</button>
+        </form>
+
+        <div class="border-t pt-6 mb-8">
+            <h3 class="text-lg font-semibold text-amber-700 mb-2">Transfer Ownership</h3>
+            <p class="text-sm text-zinc-600 mb-3">
+                Transfer control to a new owner account without deleting store data.
+            </p>
+            <form action="/owners/settings/transfer" method="post" onsubmit="return confirm('Transfer ownership now?');" class="space-y-3">
+                <input name="newFullname" type="text" placeholder="New Owner Full Name" class="w-full border rounded px-3 py-2" required>
+                <input name="newEmail" type="email" placeholder="New Owner Email" class="w-full border rounded px-3 py-2" required>
+                <input name="newPassword" type="password" placeholder="New Owner Password" class="w-full border rounded px-3 py-2" required>
+                <input name="currentPassword" type="password" placeholder="Current Owner Password (confirmation)" class="w-full border rounded px-3 py-2" required>
+                <button type="submit" class="px-4 py-2 rounded bg-amber-600 text-white">Transfer Ownership</button>
+            </form>
+        </div>
+
+        <div class="border-t pt-6">
+            <h3 class="text-lg font-semibold text-red-600 mb-2">Delete Owner Account</h3>
+            <p class="text-sm text-zinc-600 mb-3">
+                This deletes your owner account. After deletion, owner registration will be enabled again.
+            </p>
+            <form action="/owners/settings/delete" method="post" onsubmit="return confirm('Delete owner account permanently?');">
+                <input name="password" type="password" placeholder="Confirm current password" class="w-full border rounded px-3 py-2 mb-3" required>
+                <button type="submit" class="px-4 py-2 rounded bg-red-600 text-white">Delete Owner Account</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<%- include('./partials/footer') %>
