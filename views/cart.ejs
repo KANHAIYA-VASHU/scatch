@@ -1,28 +1,55 @@
 <%- include('./partials/header') %>
 
-<div class="w-full min-h-screen px-20 py-16 bg-zinc-50">
+<% if (success && success.length > 0) { %>
+    <div class="absolute top-5 left-1/2 -translate-x-1/2 p-3 rounded-md bg-blue-500 text-white">
+        <%= success %>
+    </div>
+<% } %>
+
+<% if (error && error.length > 0) { %>
+    <div class="absolute top-20 left-1/2 -translate-x-1/2 p-3 rounded-md bg-red-500 text-white">
+        <%= error %>
+    </div>
+<% } %>
+
+<div class="w-full min-h-screen px-8 md:px-20 py-10 md:py-16 bg-zinc-50">
     <h1 class="text-3xl font-semibold mb-8">My Cart</h1>
 
-    <% if (!user.cart || user.cart.length === 0) { %>
+    <% if (!lineItems || lineItems.length === 0) { %>
         <div class="bg-white rounded-lg shadow p-8">
             <p class="text-lg">Your cart is empty.</p>
             <a href="/shop" class="inline-block mt-4 px-4 py-2 rounded bg-blue-600 text-white">Go to Shop</a>
         </div>
     <% } else { %>
-        <div class="grid grid-cols-3 gap-6">
-            <div class="col-span-2 space-y-4">
-                <% user.cart.forEach(function(item) { %>
-                    <div class="bg-white rounded-lg shadow p-4 flex items-center gap-4">
-                        <div class="w-32 h-32 rounded overflow-hidden bg-[#<%= item.bgcolor %>] flex items-center justify-center">
-                            <img class="h-24" src="data:image/jpeg;base64,<%= item.image.toString('base64') %>" alt="">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-4">
+                <% lineItems.forEach(function(item) { %>
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-28 h-28 rounded overflow-hidden bg-[#<%= item.bgcolor %>] flex items-center justify-center">
+                                <img class="h-20" src="data:image/jpeg;base64,<%= item.image.toString('base64') %>" alt="">
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-lg font-medium"><%= item.name %></h3>
+                                <p class="text-sm">Unit Price: ₹ <%= item.price %></p>
+                                <p class="text-sm">Unit Discount: ₹ <%= item.discount %></p>
+                                <p class="text-sm">Line Total: ₹ <%= item.lineTotal %></p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <form action="/cart/item/<%= item.productId %>/decrease" method="post">
+                                    <button class="w-8 h-8 rounded-full bg-zinc-200 text-lg" type="submit">-</button>
+                                </form>
+                                <div class="min-w-10 text-center font-semibold"><%= item.quantity %></div>
+                                <form action="/cart/item/<%= item.productId %>/increase" method="post">
+                                    <button class="w-8 h-8 rounded-full bg-zinc-800 text-white text-lg" type="submit">+</button>
+                                </form>
+                            </div>
                         </div>
-                        <div class="flex-1">
-                            <h3 class="text-lg font-medium"><%= item.name %></h3>
-                            <p>Price: ₹ <%= item.price %></p>
-                            <p>Discount: ₹ <%= item.discount || 0 %></p>
-                        </div>
-                        <div class="font-semibold">
-                            ₹ <%= Number(item.price || 0) - Number(item.discount || 0) %>
+
+                        <div class="mt-3 flex justify-end">
+                            <form action="/cart/item/<%= item.productId %>/remove" method="post" onsubmit="return confirm('Remove this item from cart?');">
+                                <button class="px-3 py-1 rounded bg-red-600 text-white text-sm" type="submit">Remove Item</button>
+                            </form>
                         </div>
                     </div>
                 <% }) %>
@@ -31,6 +58,14 @@
             <div class="bg-white rounded-lg shadow p-6 h-fit">
                 <h2 class="text-xl font-semibold mb-4">Price Breakdown</h2>
                 <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span>Total unique products</span>
+                        <span><%= lineItems.length %></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Total items (qty)</span>
+                        <span><%= totalItems %></span>
+                    </div>
                     <div class="flex justify-between">
                         <span>Total MRP</span>
                         <span>₹ <%= subtotal %></span>
@@ -43,12 +78,34 @@
                         <span>Platform Fee</span>
                         <span>₹ <%= platformFee %></span>
                     </div>
+                    <div class="flex justify-between">
+                        <span>Shipping Fee</span>
+                        <span><%= shippingFee === 0 ? "FREE" : `₹ ${shippingFee}` %></span>
+                    </div>
                     <hr class="my-3">
                     <div class="flex justify-between font-semibold text-lg">
                         <span>Total Amount</span>
                         <span>₹ <%= bill %></span>
                     </div>
                 </div>
+
+                <div class="mt-6 border rounded-md p-4 bg-zinc-50">
+                    <h3 class="font-semibold mb-2">Payment Method</h3>
+                    <label class="flex items-center gap-2 text-sm mb-1">
+                        <input type="radio" checked disabled>
+                        Cash on Delivery (Available)
+                    </label>
+                    <label class="flex items-center gap-2 text-sm text-zinc-500">
+                        <input type="radio" disabled>
+                        UPI / Card / Netbanking (Coming later)
+                    </label>
+                </div>
+
+                <form action="/cart/checkout/cod" method="post" class="mt-4">
+                    <button class="w-full px-4 py-3 rounded bg-green-600 text-white font-semibold" type="submit">
+                        Proceed to Buy (Cash on Delivery)
+                    </button>
+                </form>
             </div>
         </div>
     <% } %>

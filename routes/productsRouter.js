@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const upload = require("../config/multer-config");
 const productModel = require("../models/product-model");
+const isOwnerLoggedIn = require("../middlewares/isOwnerLoggedIn");
 
 function parseProductBody(body) {
     return {
@@ -25,7 +26,7 @@ function validateProductFields(product, body, requireImage, hasImage) {
     return null;
 }
 
-router.post("/create", upload.single("image"), async function(req, res){
+router.post("/create", isOwnerLoggedIn, upload.single("image"), async function(req, res){
    try{
     const productData = parseProductBody(req.body);
     const validationError = validateProductFields(productData, req.body, true, !!req.file);
@@ -47,7 +48,7 @@ router.post("/create", upload.single("image"), async function(req, res){
     }
 });
 
-router.get("/edit/:id", async function(req, res){
+router.get("/edit/:id", isOwnerLoggedIn, async function(req, res){
     const product = await productModel.findById(req.params.id);
     if (!product) {
         req.flash("error", "Product not found.");
@@ -56,10 +57,10 @@ router.get("/edit/:id", async function(req, res){
 
     const success = req.flash("success");
     const error = req.flash("error");
-    res.render("editproduct", { product, success, error });
+    res.render("editproduct", { product, success, error, navRole: "owner" });
 });
 
-router.post("/update/:id", upload.single("image"), async function(req, res){
+router.post("/update/:id", isOwnerLoggedIn, upload.single("image"), async function(req, res){
     try {
         const productData = parseProductBody(req.body);
         const validationError = validateProductFields(productData, req.body, false, !!req.file);
@@ -88,7 +89,7 @@ router.post("/update/:id", upload.single("image"), async function(req, res){
     }
 });
 
-router.post("/delete/:id", async function(req, res){
+router.post("/delete/:id", isOwnerLoggedIn, async function(req, res){
     try {
         const deletedProduct = await productModel.findByIdAndDelete(req.params.id);
         if (!deletedProduct) {
@@ -103,7 +104,7 @@ router.post("/delete/:id", async function(req, res){
     }
 });
 
-router.post("/delete-all", async function(req, res){
+router.post("/delete-all", isOwnerLoggedIn, async function(req, res){
     try {
         await productModel.deleteMany({});
         req.flash("success", "All products deleted successfully.");

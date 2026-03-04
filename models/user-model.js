@@ -87,6 +87,24 @@ const orderSchema = new mongoose.Schema({
         default: "",
         trim: true,
     },
+    paymentMethod: {
+        type: String,
+        default: "COD",
+        trim: true,
+    },
+    paymentStatus: {
+        type: String,
+        default: "Pending on delivery",
+        trim: true,
+    },
+    shippingAddress: {
+        type: Object,
+        default: null,
+    },
+    items: {
+        type: Array,
+        default: [],
+    },
 }, { _id: true });
 
 const userSchema = mongoose.Schema({

@@ -59,12 +59,65 @@ function validateAddress(address) {
     return null;
 }
 
-router.get("/", function(req, res){
+function buildCartLineItems(cartProducts = []) {
+    const productMap = new Map();
+
+    for (const product of cartProducts) {
+        if (!product) continue;
+        const id = String(product._id);
+
+        if (!productMap.has(id)) {
+            productMap.set(id, {
+                productId: id,
+                name: product.name,
+                price: Number(product.price || 0),
+                discount: Number(product.discount || 0),
+                image: product.image,
+                bgcolor: product.bgcolor,
+                panelcolor: product.panelcolor,
+                textcolor: product.textcolor,
+                quantity: 0,
+            });
+        }
+
+        productMap.get(id).quantity += 1;
+    }
+
+    return Array.from(productMap.values()).map((item) => ({
+        ...item,
+        mrpTotal: item.price * item.quantity,
+        discountTotal: item.discount * item.quantity,
+        lineTotal: (item.price - item.discount) * item.quantity,
+    }));
+}
+
+function calculateCartSummary(lineItems = []) {
+    const totalItems = lineItems.reduce((sum, item) => sum + item.quantity, 0);
+    const subtotal = lineItems.reduce((sum, item) => sum + item.mrpTotal, 0);
+    const totalDiscount = lineItems.reduce((sum, item) => sum + item.discountTotal, 0);
+    const platformFee = totalItems > 0 ? 20 : 0;
+    const shippingFee = 0;
+    const bill = subtotal - totalDiscount + platformFee + shippingFee;
+
+    return { totalItems, subtotal, totalDiscount, platformFee, shippingFee, bill };
+}
+
+function getDefaultAddress(addresses = []) {
+    if (!addresses.length) return null;
+    return addresses.find((address) => address.isDefault) || addresses[0];
+}
+
+function randomDigits(length) {
+    return Math.floor(Math.random() * 10 ** length).toString().padStart(length, "0");
+}
+
+router.get("/", function(req, res) {
     let error = req.flash("error");
-    res.render("index", { error , loggedin: false});
+    let success = req.flash("success");
+    res.render("index", { error, success, loggedin: false, navRole: "guest" });
 });
 
-router.get("/shop", isloggedin, async (req, res)=>{
+router.get("/shop", isloggedin, async (req, res) => {
     const sortBy = req.query.sortby === "newest" ? "newest" : "popular";
     const sortOption =
         sortBy === "newest"
@@ -73,10 +126,10 @@ router.get("/shop", isloggedin, async (req, res)=>{
 
     let products = await productModel.find().sort(sortOption);
     let success = req.flash("success");
-    res.render("shop", { products, success, sortBy });
+    res.render("shop", { products, success, sortBy, navRole: "user" });
 });
 
-router.get("/account", isloggedin, async function(req, res){
+router.get("/account", isloggedin, async function(req, res) {
     const user = await userModel.findOne({ email: req.user.email }).select("-password");
     if (!user) {
         req.flash("error", "User not found. Please login again.");
@@ -96,6 +149,7 @@ router.get("/account", isloggedin, async function(req, res){
         pastOrders,
         success,
         error,
+        navRole: "user",
     });
 });
 
@@ -229,29 +283,219 @@ router.post("/account/addresses/:addressId/delete", isloggedin, async function(r
     }
 });
 
-router.get("/cart", isloggedin, async function(req, res){
-     let user = await userModel 
-     .findOne({ email: req.user.email }) 
-     .populate("cart"); 
-     const subtotal = user.cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
-     const totalDiscount = user.cart.reduce((sum, item) => sum + Number(item.discount || 0), 0);
-     const platformFee = user.cart.length > 0 ? 20 : 0;
-     const bill = subtotal + platformFee - totalDiscount;
-     res.render("cart", { user, bill, subtotal, totalDiscount, platformFee });
+router.get("/cart", isloggedin, async function(req, res) {
+    let user = await userModel
+        .findOne({ email: req.user.email })
+        .populate("cart");
+
+    if (!user) {
+        req.flash("error", "User not found. Please login again.");
+        return res.redirect("/users/logout");
+    }
+
+    const populatedCart = (user.cart || []).filter(Boolean);
+    if (populatedCart.length !== (user.cart || []).length) {
+        user.cart = populatedCart.map((item) => item._id);
+        await user.save();
+    }
+
+    const lineItems = buildCartLineItems(populatedCart);
+    const { totalItems, subtotal, totalDiscount, platformFee, shippingFee, bill } = calculateCartSummary(lineItems);
+    const success = req.flash("success");
+    const error = req.flash("error");
+
+    res.render("cart", {
+        user,
+        lineItems,
+        totalItems,
+        bill,
+        subtotal,
+        totalDiscount,
+        platformFee,
+        shippingFee,
+        success,
+        error,
+        navRole: "user",
     });
+});
 
+router.post("/cart/item/:productId/increase", isloggedin, async function(req, res) {
+    try {
+        const { productId } = req.params;
+        const product = await productModel.findById(productId);
+        if (!product) {
+            req.flash("error", "Product not found.");
+            return res.redirect("/cart");
+        }
 
+        const user = await userModel.findOne({ email: req.user.email });
+        if (!user) {
+            req.flash("error", "User not found. Please login again.");
+            return res.redirect("/users/logout");
+        }
 
-router.get("/addtocart/:productid", isloggedin, async function (req, res){
-    let user = await userModel.findOne({email: req.user.email});
+        user.cart.push(productId);
+        await user.save();
+        req.flash("success", "Item quantity increased.");
+        res.redirect("/cart");
+    } catch (err) {
+        req.flash("error", err.message);
+        res.redirect("/cart");
+    }
+});
+
+router.post("/cart/item/:productId/decrease", isloggedin, async function(req, res) {
+    try {
+        const { productId } = req.params;
+        const user = await userModel.findOne({ email: req.user.email });
+        if (!user) {
+            req.flash("error", "User not found. Please login again.");
+            return res.redirect("/users/logout");
+        }
+
+        const matchingIndexes = [];
+        user.cart.forEach((itemId, index) => {
+            if (String(itemId) === productId) matchingIndexes.push(index);
+        });
+
+        if (matchingIndexes.length === 0) {
+            req.flash("error", "Item not found in cart.");
+            return res.redirect("/cart");
+        }
+
+        if (matchingIndexes.length <= 1) {
+            req.flash("error", "Quantity cannot be less than 1. Use remove to delete item.");
+            return res.redirect("/cart");
+        }
+
+        const removeAt = matchingIndexes[matchingIndexes.length - 1];
+        user.cart.splice(removeAt, 1);
+        await user.save();
+        req.flash("success", "Item quantity decreased.");
+        res.redirect("/cart");
+    } catch (err) {
+        req.flash("error", err.message);
+        res.redirect("/cart");
+    }
+});
+
+router.post("/cart/item/:productId/remove", isloggedin, async function(req, res) {
+    try {
+        const { productId } = req.params;
+        const user = await userModel.findOne({ email: req.user.email });
+        if (!user) {
+            req.flash("error", "User not found. Please login again.");
+            return res.redirect("/users/logout");
+        }
+
+        const originalLength = user.cart.length;
+        user.cart = user.cart.filter((itemId) => String(itemId) !== productId);
+
+        if (user.cart.length === originalLength) {
+            req.flash("error", "Item not found in cart.");
+            return res.redirect("/cart");
+        }
+
+        await user.save();
+        req.flash("success", "Item removed from cart.");
+        res.redirect("/cart");
+    } catch (err) {
+        req.flash("error", err.message);
+        res.redirect("/cart");
+    }
+});
+
+router.post("/cart/checkout/cod", isloggedin, async function(req, res) {
+    try {
+        const user = await userModel.findOne({ email: req.user.email }).populate("cart");
+        if (!user) {
+            req.flash("error", "User not found. Please login again.");
+            return res.redirect("/users/logout");
+        }
+
+        const populatedCart = (user.cart || []).filter(Boolean);
+        if (populatedCart.length !== (user.cart || []).length) {
+            user.cart = populatedCart.map((item) => item._id);
+        }
+
+        const lineItems = buildCartLineItems(populatedCart);
+        if (!lineItems.length) {
+            req.flash("error", "Your cart is empty.");
+            return res.redirect("/cart");
+        }
+
+        const defaultAddress = getDefaultAddress(user.addresses || []);
+        if (!defaultAddress) {
+            req.flash("error", "Please add a shipping address before placing order.");
+            return res.redirect("/account");
+        }
+
+        const { totalItems, bill } = calculateCartSummary(lineItems);
+        const orderId = `ORD-${Date.now()}${randomDigits(3)}`;
+        const trackingId = `TRK-${randomDigits(8)}`;
+
+        user.orders = user.orders || [];
+        user.orders.push({
+            orderId,
+            itemsCount: totalItems,
+            totalAmount: bill,
+            status: "pending",
+            trackingId,
+            trackingStatus: "Order placed. Awaiting dispatch.",
+            eta: "3-5 business days",
+            paymentMethod: "COD",
+            paymentStatus: "Pending on delivery",
+            shippingAddress: {
+                fullName: defaultAddress.fullName,
+                phone: defaultAddress.phone,
+                line1: defaultAddress.line1,
+                line2: defaultAddress.line2,
+                city: defaultAddress.city,
+                state: defaultAddress.state,
+                postalCode: defaultAddress.postalCode,
+                country: defaultAddress.country,
+            },
+            items: lineItems.map((item) => ({
+                productId: item.productId,
+                name: item.name,
+                quantity: item.quantity,
+                unitPrice: item.price,
+                unitDiscount: item.discount,
+                lineTotal: item.lineTotal,
+            })),
+        });
+
+        user.cart = [];
+        await user.save();
+        req.flash("success", `Order placed successfully (${orderId}). Payment mode: Cash on Delivery.`);
+        res.redirect("/account");
+    } catch (err) {
+        req.flash("error", err.message);
+        res.redirect("/cart");
+    }
+});
+
+router.get("/addtocart/:productid", isloggedin, async function(req, res) {
+    let user = await userModel.findOne({ email: req.user.email });
+    if (!user) {
+        req.flash("error", "User not found. Please login again.");
+        return res.redirect("/users/logout");
+    }
+
+    const product = await productModel.findById(req.params.productid);
+    if (!product) {
+        req.flash("error", "Product not found.");
+        return res.redirect("/shop");
+    }
+
     user.cart.push(req.params.productid);
     await user.save();
     req.flash("success", "Added to cart");
     res.redirect("/shop");
-})
+});
 
-router.get("/logout", isloggedin, function(req, res){
+router.get("/logout", isloggedin, function(req, res) {
     res.redirect("/users/logout");
 });
- 
+
 module.exports = router;
